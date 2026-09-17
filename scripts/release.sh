@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-make apk
+make libtailscale debug-symbols version build-unstripped-aar
+(cd android && ./gradlew assembleRelease)
 apksigner sign --ks ../my-debug.jks --ks-key-alias my-key --ks-pass "pass:$1" \
   --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
-  --out "$(pwd)/my-app-signed.apk" tailscale-debug.apk
+  --out "$(pwd)/my-app-signed.apk" android/build/outputs/apk/release/android-release-unsigned.apk

@@ -13,6 +13,7 @@ not enough to build the app.
 ## Commands
 
 ```bash
+scripts/release.sh <keystore-password>  # release APK (minified, non-debuggable), signed to my-app-signed.apk
 make apk                # tailscale-debug.apk (builds the AAR first, then ./gradlew test assembleDebug)
 make install            # adb install -r tailscale-debug.apk
 make run                # install + adb shell am start -n com.tailscale.ipn/.MainActivity
