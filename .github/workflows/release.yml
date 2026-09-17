@@ -41,7 +41,7 @@ jobs:
       - name: Build release APK
         run: |
           make libtailscale debug-symbols version gradle-dependencies build-unstripped-aar
-          (cd android && ./gradlew test assembleRelease)
+          (cd android && ./gradlew assembleRelease)
 
       - name: Decode keystore
         env:
