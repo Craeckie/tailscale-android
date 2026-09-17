@@ -37,6 +37,13 @@ Makefile, there is no `signingConfigs` block in Gradle at all.** TV is not a pro
 `isTV()` in `android/build.gradle` toggles the `leanbackRequired` manifest placeholder and the last
 digit of `versionCode`.
 
+**`.github/workflows/release.yml`** is a separate, workspace-convention release path: pushing a
+`v*` tag builds a release APK and signs it with the shared keystore (`apksigner`, alias `my-key`),
+same as `scripts/release.sh`, then publishes it as a GitHub Release. It needs two repo secrets:
+`KEYSTORE_BASE64` (base64 of `../my-debug.jks`) and `KEYSTORE_PASSWORD`. It shares Go/JDK toolchain
+setup with `android.yml` via `.github/actions/setup-toolchain`. This is unrelated to the
+`make release`/`make release-tv` AAB path above.
+
 Docker and Nix exist for reproducibility, not as requirements: `make docker-shell` /
 `make docker-run-build` use `docker/DockerFile.amd64-build` (pinned JDK + NDK, persistent
 `.android-docker`/`.gradle-docker` mounts so the debug keystore survives), and `nix develop` works
