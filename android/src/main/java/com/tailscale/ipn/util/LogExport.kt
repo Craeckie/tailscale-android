@@ -9,9 +9,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// The two files logtail's filch buffer writes under the app data dir, named after the
-// "ipn.log." prefix passed to filch.New in libtailscale/tailscale.go.
-private val BUFFER_FILE_NAMES = listOf("ipn.log..log1.txt", "ipn.log..log2.txt")
+// The two ring files libtailscale/locallog writes under the app data dir; mirrors
+// locallog.FileNames() in Go. Not logtail's own "ipn.log.*" buffer: that one is empty
+// whenever remote logging is off, because logtail drops lines before buffering them.
+private val BUFFER_FILE_NAMES = listOf("local.log1.txt", "local.log2.txt")
 
 object LogExport {
   fun bufferFiles(dataDir: File): List<File> {

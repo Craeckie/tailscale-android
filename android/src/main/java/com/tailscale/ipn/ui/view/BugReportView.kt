@@ -3,11 +3,6 @@
 
 package com.tailscale.ipn.ui.view
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -30,9 +24,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tailscale.ipn.BuildConfig
 import com.tailscale.ipn.R
 import com.tailscale.ipn.ui.Links
 import com.tailscale.ipn.ui.theme.defaultTextColor
@@ -41,25 +33,10 @@ import com.tailscale.ipn.ui.util.ClipboardValueView
 import com.tailscale.ipn.ui.util.Lists
 import com.tailscale.ipn.ui.util.set
 import com.tailscale.ipn.ui.viewModel.BugReportViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun BugReportView(backToSettings: BackNavigation, model: BugReportViewModel = viewModel()) {
   val bugReportID by model.bugReportID.collectAsState()
-  val context = LocalContext.current
-  val noLogsText = stringResource(R.string.logs_none)
-
-  val saveLogsLauncher =
-      rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri
-        ->
-        if (uri != null) {
-          model.saveLogsTo(context, uri) { success ->
-            if (!success) Toast.makeText(context, noLogsText, Toast.LENGTH_SHORT).show()
-          }
-        }
-      }
 
   Scaffold(topBar = { Header(R.string.bug_report_title, onBack = backToSettings) }) { innerPadding
     ->
@@ -77,46 +54,9 @@ fun BugReportView(backToSettings: BackNavigation, model: BugReportViewModel = vi
 
           Lists.InfoItem(stringResource(id = R.string.bug_report_id_desc))
 
-          Lists.SectionDivider()
-
-          Setting.Text(
-              titleRes = R.string.share_logs,
-              subtitle = stringResource(R.string.logs_subtitle),
-              onClick = {
-                model.exportLogs(context) { file ->
-                  if (file == null) {
-                    Toast.makeText(context, noLogsText, Toast.LENGTH_SHORT).show()
-                  } else {
-                    val uri =
-                        FileProvider.getUriForFile(
-                            context, "${BuildConfig.APPLICATION_ID}.logs", file)
-                    val intent =
-                        Intent(Intent.ACTION_SEND).apply {
-                          type = "text/plain"
-                          putExtra(Intent.EXTRA_STREAM, uri)
-                          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                    context.startActivity(Intent.createChooser(intent, null))
-                  }
-                }
-              })
-
-          Setting.Text(
-              titleRes = R.string.save_logs,
-              onClick = {
-                try {
-                  saveLogsLauncher.launch(defaultLogFileName())
-                } catch (e: ActivityNotFoundException) {
-                  Toast.makeText(context, noLogsText, Toast.LENGTH_SHORT).show()
-                }
-              })
+          LogExportSection(model)
         }
   }
-}
-
-private fun defaultLogFileName(): String {
-  val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-  return "tailscale-logs-$timestamp.txt"
 }
 
 @Composable

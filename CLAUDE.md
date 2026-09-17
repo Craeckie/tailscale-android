@@ -85,6 +85,43 @@ yourself; keep it local and uncommitted, since CI's `go_mod_tidy.yml` won't tole
 `make bumposs` / `make update-oss` are the sanctioned way to move the pin (they also sync
 `go.toolchain.rev` from upstream `main`).
 
+## Fork changes: keep the diff to upstream merge-friendly
+
+This fork is rebased/merged onto `upstream/main` regularly, so what matters is not how much
+code the fork adds but **how many lines it changes inside upstream-owned files** — every such
+hunk is a potential conflict. New files are free. The rules, in order of preference:
+
+1. **Put fork logic in new files.** Kotlin: a new file in the same package can call and be called
+   without any import (`ui/view/LogExportSection.kt`, extension functions on an upstream class in
+   `ui/viewModel/BugReportLogExport.kt`). Resources: a separate `res/values/strings_fork.xml` is
+   merged with `strings.xml` by AAPT. Go: a new package (`libtailscale/locallog/`).
+2. **When an upstream file must change, add a hook, not a feature**: one call line at the
+   place the fork plugs in, ideally a pure insertion (a `+` hunk with no `-` lines). Avoid
+   trailing comments on that line — ktfmt reflows the closing brace around them and turns a
+   2-line insertion into a modification.
+3. **Don't touch imports in upstream files** unless the hook needs one; prefer same-package
+   placement or a fully qualified call over an added import line.
+4. Check the footprint before committing: `git fetch upstream && git diff --stat upstream/main...HEAD`
+   should list only fork-only files plus the small hooks below.
+
+Current hooks in upstream-owned files (keep this list honest when adding one):
+
+| File | Change |
+|---|---|
+| `libtailscale/tailscale.go` | `setupLogs`: `log.SetOutput` goes through `locallog.Tee`, the `onLog` goroutine writes to the same writer; one import line |
+| `android/.../ui/view/BugReportView.kt` | `LogExportSection(model)` call, 2 inserted lines |
+| `android/.../App.kt` | `IS_CLIENT_LOGGING_ENABLED_KEY` default `true` → `false` (remote logging off by default) |
+| `android/src/main/AndroidManifest.xml` | the `FileProvider` block for sharing exported logs |
+| `.gitignore` | `*.idsig` |
+
+**Local log buffer (fork-only).** Upstream logtail *drops* log lines before buffering them when
+uploads are disabled (`logtail.Logger.sendLocked`), so with remote logging off its filch files
+`ipn.log..log*.txt` stay empty. `libtailscale/locallog` therefore tees everything that goes
+through the `log` package into its own filch ring `local.log1.txt` / `local.log2.txt` under
+`filesDir` (8–16 MiB of the most recent lines, plain text with a UTC timestamp prefix, survives
+restarts). `util/LogExport.kt` reads exactly those two names — `locallog.FileNames()` is the
+source of truth, keep both sides in sync. Settings → Bug report → Share/Save logs exports them.
+
 ## Kotlin app architecture
 
 Everything lives under `android/src/main/java/com/tailscale/ipn/`.

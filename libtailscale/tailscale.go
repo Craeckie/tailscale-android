@@ -11,6 +11,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/tailscale/tailscale-android/libtailscale/locallog"
 	"tailscale.com/health"
 	"tailscale.com/logpolicy"
 	"tailscale.com/logtail"
@@ -153,7 +154,8 @@ func (b *backend) setupLogs(logDir string, logID logid.PrivateID, logf logger.Lo
 	}
 
 	log.SetFlags(0)
-	log.SetOutput(b.logger)
+	logOut := locallog.Tee(logDir, b.logger) // fork: local copy for LogExport.kt, see locallog
+	log.SetOutput(logOut)
 
 	log.Printf("goSetupLogs: success")
 
@@ -168,7 +170,7 @@ func (b *backend) setupLogs(logDir string, logID logid.PrivateID, logf logger.Lo
 		for {
 			select {
 			case logstr := <-onLog:
-				b.logger.Logf("%s", logstr)
+				logOut.Write([]byte(logstr))
 			}
 		}
 	}()

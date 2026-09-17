@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork-only strings, kept out of strings.xml so that file stays identical to upstream. -->
+<resources>
+    <!-- Bug report screen: local log export (see ui/view/LogExportSection.kt) -->
+    <string name="share_logs">Share logs</string>
+    <string name="save_logs">Save logs</string>
+    <string name="logs_subtitle">Exports the app’s local log buffer (the most recent few MB), independent of remote logging.</string>
+    <string name="logs_none">No buffered logs</string>
+</resources>
