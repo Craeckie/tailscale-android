@@ -47,6 +47,10 @@
     <string name="bug_report_instructions_linktext">contact our support team&#160;</string>
     <string name="bug_report_instructions_suffix"> and include the identifier below.</string>
     <string name="bug_report_id_desc">This ID helps us find the event in our diagnostic logs. This process does not share any of your personally-identifiable information.</string>
+    <string name="share_logs">Share logs</string>
+    <string name="save_logs">Save logs</string>
+    <string name="logs_subtitle">Exports the local log buffer. If remote logging is enabled, this only contains lines not yet uploaded.</string>
+    <string name="logs_none">No buffered logs</string>
 
     <!-- Strings for the settings screen -->
     <string name="settings_title">Settings</string>
