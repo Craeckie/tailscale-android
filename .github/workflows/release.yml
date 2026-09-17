@@ -3,11 +3,16 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      # This repo's own tags come from `make tag_release`, which uses
+      # tailscale.com/cmd/mkversion's VERSION_LONG (e.g.
+      # "1.103.187-t92ec10267-gedd351679") -- no "v" prefix, unlike upstream
+      # tailscale/tailscale-android's fetched tags (which do have one and
+      # must not trigger this).
+      - '[0-9]*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. v1.2.3). Must already exist.'
+        description: 'Tag to release (e.g. 1.103.187-t92ec10267-gedd351679). Must already exist.'
         required: true
 
 permissions:
