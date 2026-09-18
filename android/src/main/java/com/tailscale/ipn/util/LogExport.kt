@@ -21,14 +21,25 @@ object LogExport {
         .sortedBy { it.lastModified() }
   }
 
-  fun writeTo(files: List<File>, out: OutputStream) {
+  /**
+   * Writes files to out, each preceded by a source header. When header is non-null (a
+   * /localapi/v0/metrics snapshot taken at export time), it is written first under its own header,
+   * so the absolute counters at export time are available to cross-check the metricslog deltas in
+   * the ring files that follow.
+   */
+  fun writeTo(files: List<File>, out: OutputStream, header: String? = null) {
+    if (header != null) {
+      out.write("# ---- metrics snapshot ----\n".toByteArray(Charsets.UTF_8))
+      out.write(header.toByteArray(Charsets.UTF_8))
+      if (!header.endsWith("\n")) out.write("\n".toByteArray(Charsets.UTF_8))
+    }
     for (file in files) {
       out.write("# ---- ${file.name} ----\n".toByteArray(Charsets.UTF_8))
       file.inputStream().use { it.copyTo(out) }
     }
   }
 
-  fun export(context: Context): File? {
+  fun export(context: Context, header: String? = null): File? {
     val files = bufferFiles(context.filesDir)
     if (files.isEmpty()) return null
 
@@ -38,7 +49,7 @@ object LogExport {
 
     val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
     val out = File(logsDir, "tailscale-logs-$timestamp.txt")
-    out.outputStream().use { writeTo(files, it) }
+    out.outputStream().use { writeTo(files, it, header) }
     return out
   }
 }

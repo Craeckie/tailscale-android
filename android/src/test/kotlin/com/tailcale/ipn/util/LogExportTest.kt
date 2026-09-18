@@ -80,6 +80,40 @@ class LogExportTest {
   }
 
   @Test
+  fun `writeTo prepends a metrics snapshot header when given one`() {
+    val dataDir = tmp.newFolder("data")
+    val first = File(dataDir, "local.log1.txt")
+    first.writeText("{\"line\":1}\n")
+
+    val out = ByteArrayOutputStream()
+    LogExport.writeTo(
+        listOf(first),
+        out,
+        header = "# HELP fork_flowlog_new_flows counter\nfork_flowlog_new_flows 3")
+    val text = out.toString(Charsets.UTF_8.name())
+
+    val snapshotHeaderIndex = text.indexOf("# ---- metrics snapshot ----")
+    val fileHeaderIndex = text.indexOf("# ---- ${first.name} ----")
+    assertTrue(snapshotHeaderIndex == 0)
+    assertTrue(fileHeaderIndex > snapshotHeaderIndex)
+    assertTrue(text.indexOf("fork_flowlog_new_flows 3") in snapshotHeaderIndex..fileHeaderIndex)
+  }
+
+  @Test
+  fun `writeTo omits the snapshot header when header is null`() {
+    val dataDir = tmp.newFolder("data")
+    val first = File(dataDir, "local.log1.txt")
+    first.writeText("{\"line\":1}\n")
+
+    val out = ByteArrayOutputStream()
+    LogExport.writeTo(listOf(first), out)
+    val text = out.toString(Charsets.UTF_8.name())
+
+    assertTrue(text.indexOf("# ---- metrics snapshot ----") < 0)
+    assertTrue(text.indexOf("# ---- ${first.name} ----") == 0)
+  }
+
+  @Test
   fun `export returns null when nothing is buffered`() {
     val dataDir = tmp.newFolder("data")
     val cacheDir = tmp.newFolder("cache")

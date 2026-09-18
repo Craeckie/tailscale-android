@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.PowerManager
 import com.tailscale.ipn.util.TSLog
+import libtailscale.Libtailscale
 
 /**
  * Logs screen, doze and power-save-mode transitions into the local log ring, so an exported log can
@@ -36,6 +37,9 @@ object PowerStateLogger {
         object : BroadcastReceiver() {
           override fun onReceive(receiverContext: Context?, intent: Intent?) {
             TSLog.d(TAG, format(powerManager, intent?.action ?: "unknown"))
+            // Closes the current metricslog delta row here, so it never straddles this
+            // transition: the deltas attribute cleanly to the state before vs. after it.
+            Libtailscale.metricsTick()
           }
         }
     appContext.registerReceiver(receiver, filter)

@@ -124,6 +124,8 @@ Current hooks in upstream-owned files (keep this list honest when adding one):
 | `.gitignore` | `*.idsig` |
 | `libtailscale/backend.go` | `installFlowLog(w, logf)` before `w.Start()`, one line |
 | `android/.../App.kt` | `Libtailscale.setFlowOwnerLookup(FlowOwnerResolver(this))` before `Libtailscale.start(...)` |
+| `libtailscale/backend.go` | `startMetricsLog(a.backend)` right after `a.backend = b.backend`, one line |
+| `android/.../PowerStateLogger.kt` | `Libtailscale.metricsTick()` after each transition's log line, 1 inserted line |
 
 **Local log buffer (fork-only).** Upstream logtail *drops* log lines before buffering them when
 uploads are disabled (`logtail.Logger.sendLocked`), so with remote logging off its filch files
@@ -142,6 +144,21 @@ packet path through `libtailscale.FlowOwnerLookup`/`SetFlowOwnerLookup` (gomobil
 `ConnectivityManager.getConnectionOwnerUid` + `PackageManager.getPackagesForUid` (API ≥ 29 only,
 `""` otherwise). See idea #127 for how to interpret the logged lines against `open-conn-track`
 timeouts.
+
+**Metrics log (fork-only).** `libtailscale/metricslog` writes one `metrics: ...` line into the
+local log ring every 10 minutes (`libtailscale/metricslog.go`'s `startMetricsLog`, hooked in
+`backend.go`): deltas since the previous line for the `clientmetric` counters that matter for
+battery (netcheck runs, STUN/UDP/DERP sends, disco pings, DERP home changes, control map
+requests, DNS forwards, TUN packet counts, `fork_flowlog_new_flows`), plus the absolute
+`magicsock_num_derp_conns` gauge, the current exit node ID (`LocalBackend.Prefs().ExitNodeID`),
+and per-peer TxBytes/RxBytes from `LocalBackend.Status()` (keyed by `NodePublic.ShortString()`,
+capped at 12, exit-node peer marked `*`) — no IPs or hostnames, so the redactor has nothing to
+do with it. `MetricsTick()` (gomobile-bound as `Libtailscale.metricsTick()`) forces an
+out-of-cycle line tagged `why=power`; `PowerStateLogger.kt` calls it after every screen/doze
+transition so a bucket never straddles one. On export, `BugReportLogExport.kt` prepends a
+`/localapi/v0/metrics` snapshot (absolute counters at export time, for cross-checking the
+deltas) ahead of the ring files; `LogExport.writeTo`'s `header` parameter carries it. See idea
+#129 for the line format and how to read it back out of a capture.
 
 ## Kotlin app architecture
 

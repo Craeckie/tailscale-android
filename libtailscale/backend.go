@@ -148,6 +148,7 @@ func (a *App) runBackend(ctx context.Context, hardwareAttestation bool) error {
 	a.logIDPublicAtomic.Store(&b.logIDPublic)
 	a.logger.Store(b.logger)
 	a.backend = b.backend
+	startMetricsLog(a.backend)
 	if hardwareAttestation {
 		a.backend.SetHardwareAttested()
 	}
