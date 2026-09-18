@@ -216,6 +216,7 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
    * Tailscale because directFileRoot must be set before LocalBackend starts being used.
    */
   fun startLibtailscale(directFileRoot: String, hardwareAttestation: Boolean) {
+    Libtailscale.setFlowOwnerLookup(FlowOwnerResolver(this))
     app = Libtailscale.start(this.filesDir.absolutePath, directFileRoot, hardwareAttestation, this)
     ShareFileHelper.init(this, app, directFileRoot, applicationScope)
     Request.setApp(app)

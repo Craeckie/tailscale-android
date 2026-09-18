@@ -358,6 +358,7 @@ func (a *App) newBackend(dataDir string, appCtx AppContext, store *stateStore,
 	ns.ProcessSubnets = true   // for Android-being-an-exit-node support
 	sys.NetstackRouter.Set(true)
 	if w, ok := sys.Tun.GetOK(); ok {
+		installFlowLog(w, logf)
 		w.Start()
 	}
 	lb, err := ipnlocal.NewLocalBackend(logf, logID.Public(), sys, 0)

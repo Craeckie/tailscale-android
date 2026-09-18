@@ -121,6 +121,8 @@ Current hooks in upstream-owned files (keep this list honest when adding one):
 | `android/.../App.kt` | `IS_CLIENT_LOGGING_ENABLED_KEY` default `true` → `false` (remote logging off by default) |
 | `android/src/main/AndroidManifest.xml` | the `FileProvider` block for sharing exported logs |
 | `.gitignore` | `*.idsig` |
+| `libtailscale/backend.go` | `installFlowLog(w, logf)` before `w.Start()`, one line |
+| `android/.../App.kt` | `Libtailscale.setFlowOwnerLookup(FlowOwnerResolver(this))` before `Libtailscale.start(...)` |
 
 **Local log buffer (fork-only).** Upstream logtail *drops* log lines before buffering them when
 uploads are disabled (`logtail.Logger.sendLocked`), so with remote logging off its filch files
@@ -129,6 +131,16 @@ through the `log` package into its own filch ring `local.log1.txt` / `local.log2
 `filesDir` (8–16 MiB of the most recent lines, plain text with a UTC timestamp prefix, survives
 restarts). `util/LogExport.kt` reads exactly those two names — `locallog.FileNames()` is the
 source of truth, keep both sides in sync. Settings → Bug report → Share/Save logs exports them.
+
+**Flow log (fork-only).** `libtailscale/flowlog` hooks `tstun.Wrapper.PostFilterPacketOutboundToWireGuard`
+(chaining behind wgengine's own `trackOpenPostFilterOut`, installed just before `w.Start()` in
+`backend.go`) to log, rate-limited and deduped per 4-tuple, one `flow: TCP|UDP src:port > dst:port
+owner=<package>` line per new outbound flow into the local log ring. The owner lookup runs off the
+packet path through `libtailscale.FlowOwnerLookup`/`SetFlowOwnerLookup` (gomobile-bound in
+`libtailscale/flowlog_bind.go`), implemented on the Kotlin side by `FlowOwnerResolver.kt` via
+`ConnectivityManager.getConnectionOwnerUid` + `PackageManager.getPackagesForUid` (API ≥ 29 only,
+`""` otherwise). See idea #127 for how to interpret the logged lines against `open-conn-track`
+timeouts.
 
 ## Kotlin app architecture
 
