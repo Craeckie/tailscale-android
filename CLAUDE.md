@@ -119,6 +119,7 @@ Current hooks in upstream-owned files (keep this list honest when adding one):
 | `libtailscale/tailscale.go` | `setupLogs`: `log.SetOutput` goes through `locallog.Tee`, the `onLog` goroutine writes to the same writer; one import line |
 | `android/.../ui/view/BugReportView.kt` | `LogExportSection(model)` call, 2 inserted lines |
 | `android/.../App.kt` | `IS_CLIENT_LOGGING_ENABLED_KEY` default `true` → `false` (remote logging off by default) |
+| `android/.../App.kt` | `PowerStateLogger.start(this)` call in `initializeApp()`, 1 inserted line |
 | `android/src/main/AndroidManifest.xml` | the `FileProvider` block for sharing exported logs |
 | `.gitignore` | `*.idsig` |
 | `libtailscale/backend.go` | `installFlowLog(w, logf)` before `w.Start()`, one line |
