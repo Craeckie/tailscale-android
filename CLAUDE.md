@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a fork of [tailscale/tailscale-android](https://github.com/tailscale/tailscale-android)
 (`upstream` remote); `origin` is `Craeckie/tailscale-android`. Sync with
-`git fetch upstream && git merge upstream/main`.
+`git fetch upstream --tags` and merge the **newest upstream release tag** (e.g.
+`1.102.4-t3caf7d9e7-g8fbef364a`, on `upstream/release-branch/1.*`), not `upstream/main` — the user
+wants a stable build. Merge `upstream/main` only when explicitly asked. Never merge a release
+*older* than the fork's current version track to "get back" to stable. The fork has been on 1.103
+(main) since 2026-09, so the next release-only merge is upstream's 1.104. After any merge, check
+that the new build's `versionName` is higher than the last one shipped (see *Gotchas*).
 
 A hybrid app: the whole Tailscale backend is Go, compiled to an AAR with `gomobile bind`, wrapped by
 a Kotlin/Jetpack Compose UI. The `Makefile` at the repo root drives both halves — Gradle alone is
@@ -126,6 +131,7 @@ Current hooks in upstream-owned files (keep this list honest when adding one):
 | `android/.../App.kt` | `Libtailscale.setFlowOwnerLookup(FlowOwnerResolver(this))` before `Libtailscale.start(...)` |
 | `libtailscale/backend.go` | `startMetricsLog(a.backend)` right after `a.backend = b.backend`, one line |
 | `android/.../PowerStateLogger.kt` | `Libtailscale.metricsTick()` after each transition's log line, 1 inserted line |
+| `Makefile` | `MKVERSION` runs through `scripts/fork-version.sh` (fork revision in `VERSION_LONG`), 1 changed line |
 
 **Local log buffer (fork-only).** Upstream logtail *drops* log lines before buffering them when
 uploads are disabled (`logtail.Logger.sendLocked`), so with remote logging off its filch files
@@ -199,7 +205,16 @@ Everything lives under `android/src/main/java/com/tailscale/ipn/`.
   `tailscale.version`, `android/local.properties`.
 - **`tailscale.version` is regenerated** by `cmd/mkversion` from `go.mod`/`go.sum`/`go.toolchain.rev`/
   `.git/HEAD`, and feeds both the Go ldflags (`version-ldflags.sh`) and Gradle's `versionName`.
-  Regenerate it (`make version`) after a commit that should be reflected in the stamped version.
+  Regenerate it after a commit that should be reflected in the stamped version. `make version`
+  alone does **not** do that, because a commit touches none of those deps: use `rm tailscale.version && make
+  version` (`scripts/release.sh` does this itself).
+- **Fork revision in `versionName`.** `scripts/fork-version.sh` (the `MKVERSION` hook) inserts
+  `git rev-list --count HEAD` into `VERSION_LONG`: `1.103.309.1169-t523b626a8-g…`. Upstream's
+  `X.Y.Z` only moves with the tailscale.com pin. Without the revision, a fork commit or an upstream
+  merge that keeps the pin differs only in the `-g<hash>`, and the user's updater compares
+  `versionName`: it ranked such a build lower and refused it (idea #256). Every build handed to the
+  user must have a higher version *part* than the last; hashes don't count. It is `.N`, not `-N`,
+  because `1.103.309-2-t…` sorts below `1.103.309-t…`. `VERSION_SHORT` stays untouched (Go parses it).
 - **`versionCode` is derived from wall-clock time** (`VERSION_CODE_BASE`), with the trailing digit
   distinguishing phone (0) from TV (1). Don't bump it by hand.
 - **Pointing the app at a dev control server** has a first-class UI path: Settings → login with custom
