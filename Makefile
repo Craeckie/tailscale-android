@@ -190,7 +190,7 @@ tailscale-test.apk: version gradle-dependencies
 # go.mod state. VERSION_LONG's trailing -g<hash> is this repo's HEAD, so this
 # must be re-run after any commit that should be reflected in the version (see
 # tag_release / bumposs).
-MKVERSION := ./tool/go run tailscale.com/cmd/mkversion
+MKVERSION := scripts/fork-version.sh ./tool/go run tailscale.com/cmd/mkversion
 
 tailscale.version: go.mod go.sum go.toolchain.rev $(wildcard .git/HEAD)
 	@bash -c "$(MKVERSION) > tailscale.version"
