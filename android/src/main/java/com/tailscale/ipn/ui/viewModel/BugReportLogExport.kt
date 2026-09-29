@@ -33,9 +33,10 @@ private suspend fun BugReportViewModel.metricsSnapshot(): String? =
               method = "GET",
               path = "metrics",
               timeoutMillis = 3000,
-              responseType = typeOf<String>()) { result ->
-                cont.resume(result.getOrNull(), onCancellation = null)
-              }
+              responseType = typeOf<String>(),
+          ) { result ->
+            cont.resume(result.getOrNull(), onCancellation = null)
+          }
           .execute()
     }
 
@@ -59,10 +60,10 @@ fun BugReportViewModel.saveLogsTo(context: Context, uri: Uri, onResult: (Boolean
             false
           } else {
             runCatching {
-                  appContext.contentResolver.openOutputStream(uri)?.use {
-                    LogExport.writeTo(files, it, header)
-                  } ?: throw IOException("openOutputStream returned null for $uri")
-                }
+              appContext.contentResolver.openOutputStream(uri)?.use {
+                LogExport.writeTo(files, it, header)
+              } ?: throw IOException("openOutputStream returned null for $uri")
+            }
                 .isSuccess
           }
         }

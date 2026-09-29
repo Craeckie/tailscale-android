@@ -26,7 +26,7 @@ class FlowOwnerResolver(context: Context) : FlowOwnerLookup {
       srcIP: String,
       srcPort: Int,
       dstIP: String,
-      dstPort: Int
+      dstPort: Int,
   ): String {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ""
     return try {

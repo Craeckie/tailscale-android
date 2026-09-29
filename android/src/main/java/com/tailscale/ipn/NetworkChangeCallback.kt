@@ -24,13 +24,9 @@ internal data class NetworkCandidate<T>(
 
 internal fun <T> pickPreferredNetwork(candidates: List<NetworkCandidate<T>>): T? {
   fun pick(requireValidated: Boolean, requireDNS: Boolean): T? {
-    val matching =
-        candidates.filter {
-          it.internet &&
-              it.notVpn &&
-              (!requireValidated || it.validated) &&
-              (!requireDNS || it.hasDns)
-        }
+    val matching = candidates.filter {
+      it.internet && it.notVpn && (!requireValidated || it.validated) && (!requireDNS || it.hasDns)
+    }
 
     return matching.firstOrNull { it.nonMetered }?.value ?: matching.firstOrNull()?.value
   }
@@ -105,12 +101,18 @@ object NetworkChangeCallback {
             }
           }
 
-          override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+          override fun onCapabilitiesChanged(
+              network: Network,
+              capabilities: NetworkCapabilities,
+          ) {
             super.onCapabilitiesChanged(network, capabilities)
 
             lock.withLock {
               activeNetworks[network]?.caps = capabilities
-              recomputeDefaultNetworkLocked("onCapabilitiesChanged")
+
+              if (recomputeDefaultNetworkLocked("onCapabilitiesChanged")) {
+                maybeUpdateDNSConfig("onCapabilitiesChanged", dns)
+              }
             }
           }
 
@@ -135,7 +137,8 @@ object NetworkChangeCallback {
               maybeUpdateDNSConfig("onLost", dns)
             }
           }
-        })
+        },
+    )
   }
 
   // pickDefaultNetwork returns a non-VPN network to use as the 'default'
@@ -164,13 +167,16 @@ object NetworkChangeCallback {
               hasDns = info.linkProps.dnsServers.isNotEmpty(),
               nonMetered = info.caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
           )
-        })
+        }
+    )
   }
 
-  // Update cached default network + log interface name.
-  private fun recomputeDefaultNetworkLocked(why: String) {
+  // Update cached default network + log interface name. Return whether or not default network
+  // changed.
+  private fun recomputeDefaultNetworkLocked(why: String): Boolean {
     val oldNetwork = cachedDefaultNetwork
     val newNetwork = pickDefaultNetwork()
+
     cachedDefaultNetwork = newNetwork
 
     val info = if (newNetwork != null) activeNetworks[newNetwork] else null
@@ -178,11 +184,16 @@ object NetworkChangeCallback {
     cachedDefaultInterfaceName = info?.linkProps?.interfaceName
 
     TSLog.d(
-        TAG, "$why: cachedDefaultNetwork=$newNetwork iface=${cachedDefaultInterfaceName ?: "none"}")
+        TAG,
+        "$why: cachedDefaultNetwork=$newNetwork iface=${cachedDefaultInterfaceName ?: "none"}",
+    )
 
     if (newNetwork != oldNetwork) {
       underlyingNetworkListener?.invoke(newNetwork)
+      return true
     }
+
+    return false
   }
 
   // maybeUpdateDNSConfig will maybe update our DNS configuration based on the

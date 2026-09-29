@@ -1,10 +1,9 @@
 // Copyright (c) Tailscale Inc & AUTHORS
 // SPDX-License-Identifier: BSD-3-Clause
 
-package com.tailcale.ipn
+package com.tailscale.ipn
 
 import android.os.PowerManager
-import com.tailscale.ipn.PowerStateLogger
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.mock
@@ -22,7 +21,8 @@ class PowerStateLoggerTest {
 
     assertEquals(
         "screen=off doze=true lightDoze=false saver=false why=ACTION_DEVICE_IDLE_MODE_CHANGED",
-        line)
+        line,
+    )
   }
 
   @Test
@@ -36,7 +36,8 @@ class PowerStateLoggerTest {
 
     assertEquals(
         "screen=on doze=false lightDoze=false saver=false why=android.intent.action.SCREEN_ON",
-        line)
+        line,
+    )
   }
 
   @Test
@@ -51,6 +52,7 @@ class PowerStateLoggerTest {
 
     assertEquals(
         "screen=on doze=false lightDoze=false saver=false why=start ignoringBatteryOptimizations=true",
-        line)
+        line,
+    )
   }
 }

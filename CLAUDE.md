@@ -28,13 +28,13 @@ make clean              # also drops the cached Go toolchain and tailscale.versi
 
 Single Kotlin test (the Makefile doesn't wrap this):
 `cd android && ./gradlew testDebugUnitTest --tests "com.tailscale.ipn.IPNServiceTest"`.
-Instrumented tests are under `android/src/androidTest/`, built via the custom `applicationTest`
-build type (`testBuildType "applicationTest"` in `android/build.gradle`).
+`android/src/androidTest/` holds only a `TestUtil.kt` helper now (upstream dropped
+`MainActivityTest` and the custom `applicationTest` build type).
 
 Releases: `make release` (phone/tablet AAB) and `make release-tv` (Android TV AAB, `-PPLATFORM=tv`).
 Both need `JKS_PATH` and `JKS_PASSWORD` — **signing is a post-build `jarsigner` step in the
 Makefile, there is no `signingConfigs` block in Gradle at all.** TV is not a product flavor either:
-`isTV()` in `android/build.gradle` toggles the `leanbackRequired` manifest placeholder and the last
+`isTV()` in `android/build.gradle.kts` toggles the `leanbackRequired` manifest placeholder and the last
 digit of `versionCode`.
 
 **`.github/workflows/release.yml`** is a separate, workspace-convention release path: pushing a
@@ -86,7 +86,7 @@ through `libtailscale/vpnfacade.go`, whose `VPNFacade` implements both `router.R
 `dns.OSConfigurator` and rebuilds the tunnel when config changes.
 
 **Where `tailscale.com` comes from.** `go.mod` pins a plain pseudo-version
-(`tailscale.com v1.103.0-pre.0.20260903171501-92ec102673bf`) fetched from the module proxy. There is
+(`tailscale.com v1.103.0-pre.0.20260921205240-523b626a8e8f`) fetched from the module proxy. There is
 **no `replace` directive and no `go.work`** — this checkout is not wired to the sibling fork at
 `/workspace/tailscale`. To build against that checkout you'd add `replace tailscale.com => ../tailscale`
 yourself; keep it local and uncommitted, since CI's `go_mod_tidy.yml` won't tolerate it.
@@ -190,8 +190,10 @@ Everything lives under `android/src/main/java/com/tailscale/ipn/`.
   NDK-23-specific; the Makefile auto-detects whatever is under `$ANDROID_HOME/ndk/*`, which on
   this machine is 28.2.13676358 — a mismatch worth checking first if the AAR link step fails),
   `androidApiLevel=36` / build-tools `36.0.0` / `minSdkVersion 26`
-  (`android/gradle.properties`), Java 17 source+target and `jvmTarget = "17"`, Kotlin 1.9.22,
-  Compose 1.5.10, AGP 8.13.0. The Docker image ships JDK 21.
+  (`android/gradle.properties`), Java 17 source+target and `jvmTarget = JVM_17`; Gradle 9.6 runs
+  on a JDK 21 daemon (`android/gradle/gradle-daemon-jvm.properties`, CI sets up Java 21). The build
+  is Kotlin DSL (`build.gradle.kts`, `settings.gradle.kts`) with versions in
+  `android/gradle/libs.versions.toml`: AGP 9.4.0, Kotlin 2.2.10, Compose 1.7.3.
 - **Generated, never hand-edited or committed**: all of `android/libs/`, `libtailscale*.aar`,
   `libtailscale-sources.jar`, the `*.stripped`/`*.unstripped`/`*.debug` symbol files,
   `tailscale.version`, `android/local.properties`.

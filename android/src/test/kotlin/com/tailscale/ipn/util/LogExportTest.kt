@@ -89,7 +89,8 @@ class LogExportTest {
     LogExport.writeTo(
         listOf(first),
         out,
-        header = "# HELP fork_flowlog_new_flows counter\nfork_flowlog_new_flows 3")
+        header = "# HELP fork_flowlog_new_flows counter\nfork_flowlog_new_flows 3",
+    )
     val text = out.toString(Charsets.UTF_8.name())
 
     val snapshotHeaderIndex = text.indexOf("# ---- metrics snapshot ----")

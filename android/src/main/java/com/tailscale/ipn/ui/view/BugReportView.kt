@@ -45,17 +45,18 @@ fun BugReportView(backToSettings: BackNavigation, model: BugReportViewModel = vi
             Modifier.padding(innerPadding)
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .verticalScroll(rememberScrollState())) {
-          Lists.MultilineDescription {
-            Text(text = contactText(), style = MaterialTheme.typography.bodyMedium)
-          }
+                .verticalScroll(rememberScrollState())
+    ) {
+      Lists.MultilineDescription {
+        Text(text = contactText(), style = MaterialTheme.typography.bodyMedium)
+      }
 
-          ClipboardValueView(bugReportID, title = stringResource(R.string.bug_report_id))
+      ClipboardValueView(bugReportID, title = stringResource(R.string.bug_report_id))
 
-          Lists.InfoItem(stringResource(id = R.string.bug_report_id_desc))
+      Lists.InfoItem(stringResource(id = R.string.bug_report_id_desc))
 
-          LogExportSection(model)
-        }
+      LogExportSection(model)
+    }
   }
 }
 
@@ -71,9 +72,11 @@ fun contactText(): AnnotatedString {
         style =
             SpanStyle(
                 color = MaterialTheme.colorScheme.link,
-                textDecoration = TextDecoration.Underline)) {
-          append(stringResource(id = R.string.bug_report_instructions_linktext))
-        }
+                textDecoration = TextDecoration.Underline,
+            )
+    ) {
+      append(stringResource(id = R.string.bug_report_instructions_linktext))
+    }
     pop()
 
     withStyle(SpanStyle(color = MaterialTheme.colorScheme.defaultTextColor)) {

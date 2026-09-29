@@ -16,7 +16,8 @@ class NetworkChangeCallbackTest {
                 candidate("unvalidated-dns", validated = false, hasDns = true),
                 candidate("validated-no-dns", validated = true, hasDns = false),
                 candidate("validated-dns", validated = true, hasDns = true),
-            ))
+            )
+        )
 
     assertEquals("validated-dns", result)
   }
@@ -28,7 +29,8 @@ class NetworkChangeCallbackTest {
             listOf(
                 candidate("unvalidated-dns", validated = false, hasDns = true),
                 candidate("validated-no-dns", validated = true, hasDns = false),
-            ))
+            )
+        )
 
     assertEquals("validated-no-dns", result)
   }
@@ -40,7 +42,8 @@ class NetworkChangeCallbackTest {
             listOf(
                 candidate("unvalidated-no-dns", validated = false, hasDns = false),
                 candidate("unvalidated-dns", validated = false, hasDns = true),
-            ))
+            )
+        )
 
     assertEquals("unvalidated-dns", result)
   }
@@ -60,7 +63,8 @@ class NetworkChangeCallbackTest {
             listOf(
                 candidate("metered", nonMetered = false),
                 candidate("non-metered", nonMetered = true),
-            ))
+            )
+        )
 
     assertEquals("non-metered", result)
   }
@@ -72,7 +76,8 @@ class NetworkChangeCallbackTest {
             listOf(
                 candidate("no-internet", internet = false),
                 candidate("internet"),
-            ))
+            )
+        )
 
     assertEquals("internet", result)
   }
@@ -84,7 +89,8 @@ class NetworkChangeCallbackTest {
             listOf(
                 candidate("vpn", notVpn = false),
                 candidate("non-vpn"),
-            ))
+            )
+        )
 
     assertEquals("non-vpn", result)
   }
@@ -96,9 +102,22 @@ class NetworkChangeCallbackTest {
             listOf(
                 candidate("no-internet", internet = false),
                 candidate("vpn", notVpn = false),
-            ))
+            )
+        )
 
     assertNull(result)
+  }
+
+  @Test
+  fun networkCanBecomePreferredWhenItBecomesValidated() {
+    val cellular = candidate("cellular", validated = true, nonMetered = false)
+    val wifi = candidate("wifi", validated = false, nonMetered = true)
+
+    assertEquals("cellular", pickPreferredNetwork(listOf(cellular, wifi)))
+
+    val validatedWifi = wifi.copy(validated = true)
+
+    assertEquals("wifi", pickPreferredNetwork(listOf(cellular, validatedWifi)))
   }
 
   private fun candidate(

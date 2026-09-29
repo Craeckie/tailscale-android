@@ -61,7 +61,8 @@ fun LogExportSection(model: BugReportViewModel) {
             context.startActivity(Intent.createChooser(intent, null))
           }
         }
-      })
+      },
+  )
 
   Setting.Text(
       titleRes = R.string.save_logs,
@@ -71,7 +72,8 @@ fun LogExportSection(model: BugReportViewModel) {
         } catch (e: ActivityNotFoundException) {
           Toast.makeText(context, noLogsText, Toast.LENGTH_SHORT).show()
         }
-      })
+      },
+  )
 }
 
 private fun defaultLogFileName(): String {
