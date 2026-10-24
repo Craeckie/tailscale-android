@@ -6,4 +6,8 @@
     <string name="save_logs">Save logs</string>
     <string name="logs_subtitle">Exports the app’s local log buffer (the most recent few MB), independent of remote logging.</string>
     <string name="logs_none">No buffered logs</string>
+
+    <!-- Settings: verbose logging switch (see ui/view/VerboseLoggingSetting.kt) -->
+    <string name="verbose_logging">Verbose logging</string>
+    <string name="verbose_logging_subtitle">Also shows the backend’s verbose [v1] lines in Logcat. Exported logs include them either way.</string>
 </resources>

@@ -149,6 +149,7 @@ func (b *backend) setupLogs(logDir string, logID logid.PrivateID, logf logger.Lo
 	}
 
 	b.logger = logtail.NewLogger(logcfg, logf)
+	verboseLogging.Attach(b.logger)
 	if !enableUpload {
 		log.Printf("remote log upload disabled by user preference")
 	}

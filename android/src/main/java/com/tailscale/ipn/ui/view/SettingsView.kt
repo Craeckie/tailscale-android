@@ -139,6 +139,7 @@ fun SettingsView(
             }
           },
       )
+      VerboseLoggingSetting()
 
       if (!AndroidTVUtil.isAndroidTV()) {
         Lists.ItemDivider()

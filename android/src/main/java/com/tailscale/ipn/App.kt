@@ -255,6 +255,7 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
    */
   fun startLibtailscale(directFileRoot: String, hardwareAttestation: Boolean) {
     Libtailscale.setFlowOwnerLookup(FlowOwnerResolver(this))
+    VerboseLogging.applyPersisted(this)
     app = Libtailscale.start(this.filesDir.absolutePath, directFileRoot, hardwareAttestation, this)
     ShareFileHelper.init(this, app, directFileRoot, applicationScope)
     Request.setApp(app)
