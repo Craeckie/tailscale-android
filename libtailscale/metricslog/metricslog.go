@@ -125,12 +125,31 @@ type peerBytes struct {
 	key    string
 	tx, rx int64
 	exit   bool
+	path   string
+}
+
+// peerPath returns the path a peer's traffic takes at the time of the
+// call: "d" direct (CurAddr set), "p" peer relay (PeerRelay set), "r<code>"
+// DERP only (Relay holds the region code, e.g. "rfra"), or "-" for none.
+func peerPath(ps *ipnstate.PeerStatus) string {
+	switch {
+	case ps.CurAddr != "":
+		return "d"
+	case ps.PeerRelay != "":
+		return "p"
+	case ps.Relay != "":
+		return "r" + ps.Relay
+	default:
+		return "-"
+	}
 }
 
 // formatPeers renders peers with any traffic, busiest first, capped at
 // maxPeers, keyed by the same short form magicsock uses in its own log
 // lines so rows correlate. The current exit node peer (if any) is marked
-// with a trailing "*". No IPs or hostnames, so the redactor has nothing to
+// with a trailing "*". Each entry ends in "@" plus its path (see peerPath),
+// sampled at tick time, so a bucket in which the path changed carries only
+// its end state. No IPs or hostnames, so the redactor has nothing to
 // do with this line.
 func formatPeers(st *ipnstate.Status) string {
 	if st == nil {
@@ -144,7 +163,7 @@ func formatPeers(st *ipnstate.Status) string {
 		if ps.TxBytes <= 0 && ps.RxBytes <= 0 {
 			continue
 		}
-		peers = append(peers, peerBytes{pub.ShortString(), ps.TxBytes, ps.RxBytes, ps.ExitNode})
+		peers = append(peers, peerBytes{pub.ShortString(), ps.TxBytes, ps.RxBytes, ps.ExitNode, peerPath(ps)})
 	}
 	sort.Slice(peers, func(i, j int) bool {
 		ti, tj := peers[i].tx+peers[i].rx, peers[j].tx+peers[j].rx
@@ -162,7 +181,7 @@ func formatPeers(st *ipnstate.Status) string {
 		if p.exit {
 			marker = "*"
 		}
-		parts[i] = fmt.Sprintf("%s%s:%d/%d", p.key, marker, p.tx, p.rx)
+		parts[i] = fmt.Sprintf("%s%s:%d/%d@%s", p.key, marker, p.tx, p.rx, p.path)
 	}
 	return strings.Join(parts, ",")
 }

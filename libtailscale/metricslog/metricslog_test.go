@@ -43,8 +43,8 @@ func TestTickDeltasAndAbsoluteFields(t *testing.T) {
 	peerB := key.NewNode().Public()
 	st := &ipnstate.Status{
 		Peer: map[key.NodePublic]*ipnstate.PeerStatus{
-			peerA: {TxBytes: 100, RxBytes: 200, ExitNode: true},
-			peerB: {TxBytes: 5, RxBytes: 5},
+			peerA: {TxBytes: 100, RxBytes: 200, ExitNode: true, CurAddr: "192.0.2.1:41641", Relay: "fra"},
+			peerB: {TxBytes: 5, RxBytes: 5, Relay: "fra"},
 		},
 	}
 	src := fakeSource{st: st, exit: "nExit123"}
@@ -90,7 +90,7 @@ func TestTickDeltasAndAbsoluteFields(t *testing.T) {
 	got := (*lines)[0]
 
 	want := "metrics: exit_node=nExit123 netcheck=26 stun_tx=37 udp_tx=200 derp_tx=10 disco_ping=40 derp_conns=3 derp_home=1 map_req=1 dns_fwd=20 dns_doh=15 tun_in=300 tun_out=400 flows=5 peers=" +
-		peerA.ShortString() + "*:100/200," + peerB.ShortString() + ":5/5 why=tick"
+		peerA.ShortString() + "*:100/200@d," + peerB.ShortString() + ":5/5@rfra why=tick"
 	if got != want {
 		t.Errorf("Tick line:\n got  %q\nwant %q", got, want)
 	}
@@ -145,5 +145,30 @@ func TestFormatPeersSortsAndCaps(t *testing.T) {
 	busiest := keys[len(keys)-1]
 	if !strings.HasPrefix(entries[0], busiest.ShortString()+":") {
 		t.Errorf("first entry %q, want busiest peer %s first", entries[0], busiest.ShortString())
+	}
+}
+
+func TestFormatPeersPath(t *testing.T) {
+	tests := []struct {
+		name string
+		ps   ipnstate.PeerStatus
+		want string
+	}{
+		{"direct", ipnstate.PeerStatus{CurAddr: "192.0.2.1:41641", Relay: "fra"}, ":1/2@d"},
+		{"peer relay", ipnstate.PeerStatus{PeerRelay: "192.0.2.2:7777:vni:3", Relay: "fra"}, ":1/2@p"},
+		{"derp", ipnstate.PeerStatus{Relay: "fra"}, ":1/2@rfra"},
+		{"none", ipnstate.PeerStatus{}, ":1/2@-"},
+		{"exit node direct", ipnstate.PeerStatus{CurAddr: "192.0.2.1:41641", ExitNode: true}, "*:1/2@d"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k := key.NewNode().Public()
+			ps := tt.ps
+			ps.TxBytes, ps.RxBytes = 1, 2
+			got := formatPeers(&ipnstate.Status{Peer: map[key.NodePublic]*ipnstate.PeerStatus{k: &ps}})
+			if want := k.ShortString() + tt.want; got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		})
 	}
 }
