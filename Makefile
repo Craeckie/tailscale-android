@@ -306,7 +306,7 @@ androidpath:
 
 .PHONY: tag_release
 tag_release: tailscale.version ## Tag the current commit with the current version
-	source tailscale.version && git tag -a "$${VERSION_LONG}" -m "OSS and Version updated to $${VERSION_LONG}"
+	source tailscale.version && git tag -a "$${VERSION_NAME}" -m "OSS and Version updated to $${VERSION_NAME}"
 
 .PHONY: bumposs ## Bump to the latest oss and update the versions.
 bumposs: update-oss tailscale.version
