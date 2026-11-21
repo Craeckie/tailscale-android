@@ -24,13 +24,16 @@ func startMetricsLog(lb *ipnlocal.LocalBackend) {
 	l := metricslog.New(lb, log.Printf)
 	metricsLogger.Store(l)
 	go l.Run(context.Background(), metricsTickInterval)
+	startWedgeWatch(lb)
 }
 
 // MetricsTick logs one metricslog delta line immediately, tagged as a
 // power-state transition. Gomobile binds this as Libtailscale.metricsTick();
-// it is a no-op if called before startMetricsLog has run.
+// it is a no-op if called before startMetricsLog has run. Kotlin calls it on
+// the main thread, so the line is written from a goroutine (Tick takes
+// LocalBackend's mutex via Status()); a tick still in flight makes it a no-op.
 func MetricsTick() {
 	if l := metricsLogger.Load(); l != nil {
-		l.Tick("power")
+		l.TickAsync("power")
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"tailscale.com/ipn"
@@ -43,6 +44,8 @@ type Logger struct {
 
 	mu   sync.Mutex
 	prev map[string]int64 // snapshot as of the last Tick (or New, before the first Tick)
+
+	asyncBusy atomic.Bool // a TickAsync goroutine is running
 }
 
 // New creates a Logger that reads src and logs via logf. It takes an
@@ -75,6 +78,21 @@ func (l *Logger) Run(ctx context.Context, interval time.Duration) {
 			l.Tick("tick")
 		}
 	}
+}
+
+// TickAsync runs Tick(why) in a new goroutine and returns at once, so a
+// caller on Android's main thread never waits on LocalBackend's mutex. If an
+// earlier TickAsync is still running (the backend is slow or stuck), it does
+// nothing and returns false, so stuck goroutines can't pile up.
+func (l *Logger) TickAsync(why string) bool {
+	if !l.asyncBusy.CompareAndSwap(false, true) {
+		return false
+	}
+	go func() {
+		defer l.asyncBusy.Store(false)
+		l.Tick(why)
+	}()
+	return true
 }
 
 // Tick logs one delta line now, tagging it with why ("tick" from Run's

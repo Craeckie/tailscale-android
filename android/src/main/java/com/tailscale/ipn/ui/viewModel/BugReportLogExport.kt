@@ -19,14 +19,23 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Fetches a /localapi/v0/metrics snapshot to prepend to an export, giving the absolute counters at
  * export time to cross-check metricslog's deltas against. Export must still work if the backend
- * can't answer in time, so this returns null on any failure rather than propagating one.
+ * can't answer in time, so this returns null on any failure rather than propagating one. The outer
+ * timeout also covers waits the LocalAPI timeout does not (`callLocalAPI` blocks on backend
+ * readiness before its own deadline starts), so a stuck backend never blocks the export.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 private suspend fun BugReportViewModel.metricsSnapshot(): String? =
+    withTimeoutOrNull(METRICS_SNAPSHOT_TIMEOUT_MILLIS) { requestMetricsSnapshot() }
+
+private const val METRICS_SNAPSHOT_TIMEOUT_MILLIS = 4000L
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private suspend fun BugReportViewModel.requestMetricsSnapshot(): String? =
     suspendCancellableCoroutine { cont ->
       Request<String>(
               scope = viewModelScope,

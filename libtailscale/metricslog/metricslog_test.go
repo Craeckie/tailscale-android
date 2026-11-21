@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
@@ -170,5 +171,52 @@ func TestFormatPeersPath(t *testing.T) {
 				t.Errorf("got %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+// blockingSource blocks Status() until release is closed, like a
+// LocalBackend whose mutex is held by a stuck goroutine.
+type blockingSource struct {
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (b blockingSource) Status() *ipnstate.Status {
+	b.entered <- struct{}{}
+	<-b.release
+	return &ipnstate.Status{}
+}
+func (b blockingSource) Prefs() ipn.PrefsView { return (&ipn.Prefs{}).View() }
+
+func TestTickAsyncDoesNotBlockOrPileUp(t *testing.T) {
+	src := blockingSource{entered: make(chan struct{}, 10), release: make(chan struct{})}
+	l, _ := newLoggerAt(src, map[string]int64{}, map[string]int64{})
+
+	done := make(chan bool)
+	go func() { done <- l.TickAsync("power") }()
+	select {
+	case ok := <-done:
+		if !ok {
+			t.Fatal("first TickAsync returned false")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("TickAsync blocked on a stuck Status()")
+	}
+	<-src.entered
+	for range 3 {
+		if l.TickAsync("power") {
+			t.Fatal("TickAsync started a second goroutine while the first is stuck")
+		}
+	}
+	close(src.release)
+	deadline := time.Now().Add(time.Second)
+	for !l.TickAsync("power") {
+		if time.Now().After(deadline) {
+			t.Fatal("TickAsync never became available again after release")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if len(src.entered) > 1 {
+		t.Fatalf("Status() entered %d extra times, want at most 1", len(src.entered))
 	}
 }
